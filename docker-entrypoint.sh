@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
 
-GOSRCPATH="/usr/lib/go"
 WEBHOOKS_DIRECTORY="/etc/webhooks/hooks"
 
 start_webhook_worker() {

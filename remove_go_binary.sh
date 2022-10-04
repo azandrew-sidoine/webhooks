@@ -1,5 +1,7 @@
 #!/usr/bin/env /bin/sh
 
+GOSRCPATH="/usr/lib/go"
+
 remove_go_binary() {
     if [ -d "$GOSRCPATH" ]; then
         GOPATH=$(command -v go)

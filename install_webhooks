@@ -1,15 +1,42 @@
 #!/usr/bin/env /bin/sh
-cwd="$(pwd)"
+
+program()
+{
+   echo ""
+   echo "Usage: $0 -i <DOCKER_IMAGE_NAME> -d <APPLICATION_DIRECTORY>"
+   echo "\t-h IP address of the host (Default: 0.0.0.0)"
+   echo "\t-p Running port of the application (Default: 5500)"
+   echo "\t-t Nginx Hestia Template"
+   echo "\t-u Run the script as user (Default: Current user)"
+   echo "\t-c Hooks configuration file. By default a test configuration is generated"
+   exit 1 # Exit script after printing help
+}
+
+while getopts "h:p:t:u:c:" opt
+do
+   case "$opt" in
+      h) host="$OPTARG" ;;
+      p) port="$OPTARG" ;;
+      t) template="$OPTARG" ;;
+      u) runAs="$OPTARG" ;;
+      c) configPath="$OPTARG" ;;
+      ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
+   esac
+done
+
+CURRENT_WORKING_DIRECTORY="$(pwd)"
+BINARY_DIRECTORY=${CURRENT_WORKING_DIRECTORY}/.bin
+WEBHOOKS_DIRECTORY=/etc/webhooks
 GO_VERSION="1.19.1"
-user=${user:-$USER}
-PROXY_PORT=5500
-PROXY_TEMPLATE_NAME=localhost
+user=${runAs:-$USER}
+APP_PORT=5500
+proxyTemplate=${template}
 
 #region Helper functions
 start_webhook_worker() {
     bin=$(command -v supervisorctl)
 
-    # Install supervisor
+    # Install supervisor if not exist on the system
     if ! [ -x "$bin" ]; then
         apt-get update && apt install supervisor -y
         # Start supervisor service
@@ -28,10 +55,11 @@ start_webhook_worker() {
     echo "Stopping previously running workers..."
     supervisorctl stop webhooks-worker:*
 
+    # Write supervisor webhooks worker configuration values
     {
         echo "[program:webhooks-worker]"
         echo "process_name=%(program_name)s_%(process_num)02d"
-        echo "command=/usr/local/bin/webhook -ip 127.0.0.1 -hotreload -port 8888 -logfile /etc/webhooks/logs/webhooks.logs -hooks /etc/webhooks/hooks.yml --verbose"
+        echo "command=/usr/local/bin/webhook -ip 127.0.0.1 -hotreload -port 8888 -logfile $WEBHOOKS_DIRECTORY/logs/webhooks.logs -hooks $WEBHOOKS_DIRECTORY/hooks.yml --verbose"
         echo "autostart=true"
         echo "autorestart=true"
         echo "stopasgroup=true"
@@ -39,7 +67,7 @@ start_webhook_worker() {
         echo "user=root"
         echo "numprocs=1"
         echo "redirect_stderr=true"
-        echo "stdout_logfile=/etc/webhooks/logs/webhooks.logs"
+        echo "stdout_logfile=$WEBHOOKS_DIRECTORY/logs/webhooks.logs"
         echo "stopwaitsecs=3600"
     } >'/etc/supervisor/conf.d/webhooks-worker.conf'
 
@@ -54,17 +82,50 @@ install_golang_binary() {
     # Download & Configure GoLang binary
     wget "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.g" \
     # Removes previously installed go directory and install the current go
-    && rm -rf /usr/local/go && tar -C /usr/local -xzf "$cwd/go$GO_VERSION.linux-amd64.tar.gz" \
+    && rm -rf /usr/local/go && tar -C /usr/local -xzf "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz" \
     # Remove go source
-    && rm "$cwd/go$GO_VERSION.linux-amd64.tar.gz"
+    && rm "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
+}
+
+uninstall_go_binary() {
+    rm -f $(command -v go) \
+    && rm -rf /usr/local/go
+}
+
+cleanup_webhook_git_directory() {
+    rm -rf "$CURRENT_WORKING_DIRECTORY/webhook"
 }
 
 make_webhook_binary() {
     git clone https://github.com/adnanh/webhook.git webhook \
-    && mkdir "$cwd/.bin" \
-    && cd webhook \
-    && go build -o .bin github.com/adnanh/webhook \
-    && ln -s "$cwd/.bin/webhook" /usr/local/bin/webhook
+    && mkdir $BINARY_DIRECTORY \
+    && cd webhook && go build -o $BINARY_DIRECTORY github.com/adnanh/webhook \
+    && ln -s "$BINARY_DIRECTORY/webhook" /usr/local/bin/webhook \
+    && cd $CURRENT_WORKING_DIRECTORY
+}
+
+create_hooks_config() {
+    if [ -z "$configPath" ] && [ -f "$configPath" ] ; then
+        hooksConfig=$(<"$configPath")
+        extension=$(echo "$configPath" | cut -d "." -f2)
+        if ! [ -z $extension ]; then
+            extension='yml'
+        fi
+        echo "$hooksConfig" > "$WEBHOOKS_DIRECTORY/hooks/config.$extension"
+    else
+        {
+            echo "-"
+            echo "\tid: \"test-script-hook\""
+            echo "\texecute-command: \"$WEBHOOKS_DIRECTORY/hooks/hello.sh\""
+            echo "\tcommand-working-directory: \"$WEBHOOKS_DIRECTORY\""
+            echo "\tresponse-message: \"Webhooks server in working state!\""
+        } > "$WEBHOOKS_DIRECTORY/hooks/config.yml"
+        {
+            echo "#!/bin/bash"
+            echo ""
+            echo "echo 'Hello World' >> $WEBHOOKS_DIRECTORY/logs/hello.log"
+        } > "$WEBHOOKS_DIRECTORY/hooks/hello.sh"
+    fi
 }
 
 configure_webhook_config_dir() {
@@ -73,16 +134,17 @@ configure_webhook_config_dir() {
     # Create webhook logs directory
     && mkdir /etc/webhooks/logs/ \
     # Grant ownership to the specified command user
-    && chown -R $user:$user /etc/webhooks
-    hooksPath="$cwd/hooks.yml"
-    if [ -f "$hooksPath" ]; then
-        cp -p "$hooksPath" "/etc/webhooks/$hooksPath"
+    && chown -R $user /etc/webhooks
+
+    # Create the required webhooks configuration
+    create_hooks_config
+}
+
+create_proxy_template() {
+    if [ -z "$template" ]; then
+        createWebhookTemplateCommand="$CURRENT_WORKING_DIRECTORY/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate"
+        echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
     fi
-    # Create test hello world hook
-    {
-        echo "#!/bin/bash"
-        echo "echo 'Hello World!' >> /etc/webhooks/logs/hello_world.log"
-    } > /etc/webhooks/hello_world.sh
 }
 #enregion Helper function
 
@@ -92,11 +154,17 @@ install_golang_binary
 # Install and build webhook package
 make_webhook_binary
 
+# Remove Go binaries
+uninstall_go_binary
+
+# Cleanup by removing webhook git directory
+cleanup_webhook_git_directory
+
 # Configure webhook configurations directory
+configure_webhook_config_dir
 
 # Create proxy template
-# createWebhookTemplateCommand="$cwd/hs-nginx-proxy --port $PROXY_TEMPLATE_NAME --template $PROXY_TEMPLATE_NAME"
-# echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
+create_proxy_template
 
 # Add webhook worker supervisor config
 start_webhook_worker
