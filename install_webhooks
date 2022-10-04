@@ -1,7 +1,6 @@
 #!/usr/bin/env /bin/sh
 
-program()
-{
+program() {
    echo ""
    echo "Usage: $0 -i <DOCKER_IMAGE_NAME> -d <APPLICATION_DIRECTORY>"
    echo "\t-h IP address of the host (Default: 0.0.0.0)"
