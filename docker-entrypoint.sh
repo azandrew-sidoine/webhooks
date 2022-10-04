@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 
 GOSRCPATH="/usr/lib/go"
+WEBHOOKS_DIRECTORY="/etc/webhooks/hooks"
 
 start_webhook_worker() {
     {
@@ -13,7 +14,7 @@ start_webhook_worker() {
 
         echo "[program:webhooks-worker]"
         echo "process_name=%(program_name)s_%(process_num)02d"
-        echo "command=/usr/local/bin/webhook -ip 127.0.0.1 -hotreload -port $APP_PORT -logfile /etc/webhooks/logs/webhooks.logs -hooks /etc/webhooks/hooks/config.yml --verbose"
+        echo "command=/usr/local/bin/webhook -ip 0.0.0.0 -hotreload -port $APP_PORT -logfile /etc/webhooks/logs/webhooks.logs -hooks /etc/webhooks/hooks/config.yml --verbose"
         echo "autostart=true"
         echo "autorestart=true"
         echo "stopasgroup=true"
@@ -46,14 +47,16 @@ remove_go_binary() {
 
 make_shell_scripts_executable() {
     if [ -d "$WEBHOOKS_DIRECTORY" ]; then
-        for FILE in "$WEBHOOKS_DIRECTORY"; do
-            echo "Making $FILE executable..."
+        entries=$(ls $WEBHOOKS_DIRECTORY)
+        for FILE in $entries; do
             # We make any file in the /etc/webhooks/hooks directory executable except
             # for any .yml and .json files
-            if [ '' == "$(echo $FILE | grep -E '(json|yml)$')" ]; then
-                $chmodCommand="chmod +x $WEBHOOKS_DIRECTORY/$FILE"
-                echo $(eval $chmodCommand) >>/dev/null
-                echo "$FILE successfully converted into an exectable..."
+            result=$(echo $FILE | grep -E '(json|yml)$')
+            if [ '' == "$result" ]; then
+                path="$WEBHOOKS_DIRECTORY/$FILE"
+                echo "Making $path executable..."
+                chmod +x $path >>/dev/null
+                echo "$path successfully converted into an exectable..."
             fi
         done
     fi

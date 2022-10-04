@@ -2,8 +2,8 @@ FROM alpine:latest
 
 ARG WORKDIR=/app
 ARG BINARY_DIRECTORY=${WORKDIR}/.bin
-ARG WEBHOOKS_DIRECTORY=/etc/webhooks/hooks
 ARG EXPOSE_PORT=8080
+
 ENV APP_PORT=$EXPOSE_PORT
 
 WORKDIR ${WORKDIR}
@@ -41,7 +41,7 @@ RUN mkdir /etc/webhooks \
 
 # Prepare webhooks hello world script
 RUN mkdir -p /etc/webhooks/hooks
-COPY ./hooks/* $WEBHOOKS_DIRECTORY
+COPY ./hooks/* /etc/webhooks/hooks
 
 COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
