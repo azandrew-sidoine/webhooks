@@ -34,7 +34,7 @@ RUN git clone https://github.com/adnanh/webhook.git webhook \
 # Remove go and webhooks source files
 COPY ./remove_go_binary.sh $WORKDIR/remove_go_binary.sh
 RUN chmod +x $WORKDIR/remove_go_binary.sh
-RUN source $WORKDIR/remove_go_binary.sh
+RUN $WORKDIR/remove_go_binary.sh
 RUN rm -f $WORKDIR/remove_go_binary.sh \
     && rm -rf $WORKDIR/webhook
 
