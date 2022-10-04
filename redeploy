@@ -1,0 +1,35 @@
+#!/usr/bin/env /bin/sh
+
+# Add server startup code below
+
+helpFunction()
+{
+   echo ""
+   echo "Usage: $0 -i <DOCKER_IMAGE_NAME> -d <APPLICATION_DIRECTORY>"
+   echo "\t-i Docker image name"
+   echo "\t-d Application Directory absolute path"
+   exit 1 # Exit script after printing help
+}
+
+while getopts "i:d:" opt
+do
+   case "$opt" in
+      i ) image="$OPTARG" ;;
+      d ) directory="$OPTARG" ;;
+      ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
+   esac
+done
+
+if [ -z "$image" ] || [ -z "$directory" ]; then
+    helpFunction
+else
+    # Pull Docker Image
+    docker pull $image
+
+    command="cd $directory && /usr/bin/docker compose down && /usr/bin/docker compose rm && /usr/bin/docker compose --env-file .env up -d"
+
+    # Execute command and start or restart the application stack
+    echo $(eval "$command") >> /dev/null
+
+    exit 0
+fi;

@@ -1,0 +1,5 @@
+-
+  id: "test-script-hook"
+  execute-command: "/etc/webhooks/hello.sh"
+  command-working-directory: "/etc/webhooks"
+  response-message: "Webhooks server in working state!"

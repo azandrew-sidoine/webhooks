@@ -1,0 +1,102 @@
+#!/usr/bin/env /bin/sh
+cwd="$(pwd)"
+GO_VERSION="1.19.1"
+user=${user:-$USER}
+PROXY_PORT=5500
+PROXY_TEMPLATE_NAME=localhost
+
+#region Helper functions
+start_webhook_worker() {
+    bin=$(command -v supervisorctl)
+
+    # Install supervisor
+    if ! [ -x "$bin" ]; then
+        apt-get update && apt install supervisor -y
+        # Start supervisor service
+        service supervisor start
+        # Enable supervisor to start when system start
+        systemctl enable supervisor
+    fi
+
+    bin=$(command -v supervisorctl)
+    if ! [ -x "$bin" ]; then
+        echo 'No supervisor binary located on the system!'
+        exit 1
+    fi
+
+    # Stop running workers
+    echo "Stopping previously running workers..."
+    supervisorctl stop webhooks-worker:*
+
+    {
+        echo "[program:webhooks-worker]"
+        echo "process_name=%(program_name)s_%(process_num)02d"
+        echo "command=/usr/local/bin/webhook -ip 127.0.0.1 -hotreload -port 8888 -logfile /etc/webhooks/logs/webhooks.logs -hooks /etc/webhooks/hooks.yml --verbose"
+        echo "autostart=true"
+        echo "autorestart=true"
+        echo "stopasgroup=true"
+        echo "killasgroup=true"
+        echo "user=root"
+        echo "numprocs=1"
+        echo "redirect_stderr=true"
+        echo "stdout_logfile=/etc/webhooks/logs/webhooks.logs"
+        echo "stopwaitsecs=3600"
+    } >'/etc/supervisor/conf.d/webhooks-worker.conf'
+
+    # Update supervisor configs
+    supervisorctl reread && supervisorctl update
+
+    # Start the webhooks workers
+    supervisorctl start webhooks-worker:*
+}
+
+install_golang_binary() {
+    # Download & Configure GoLang binary
+    wget "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.g" \
+    # Removes previously installed go directory and install the current go
+    && rm -rf /usr/local/go && tar -C /usr/local -xzf "$cwd/go$GO_VERSION.linux-amd64.tar.gz" \
+    # Remove go source
+    && rm "$cwd/go$GO_VERSION.linux-amd64.tar.gz"
+}
+
+make_webhook_binary() {
+    git clone https://github.com/adnanh/webhook.git webhook \
+    && mkdir "$cwd/.bin" \
+    && cd webhook \
+    && go build -o .bin github.com/adnanh/webhook \
+    && ln -s "$cwd/.bin/webhook" /usr/local/bin/webhook
+}
+
+configure_webhook_config_dir() {
+    # Create webhook directory
+    mkdir /etc/webhooks \
+    # Create webhook logs directory
+    && mkdir /etc/webhooks/logs/ \
+    # Grant ownership to the specified command user
+    && chown -R $user:$user /etc/webhooks
+    hooksPath="$cwd/hooks.yml"
+    if [ -f "$hooksPath" ]; then
+        cp -p "$hooksPath" "/etc/webhooks/$hooksPath"
+    fi
+    # Create test hello world hook
+    {
+        echo "#!/bin/bash"
+        echo "echo 'Hello World!' >> /etc/webhooks/logs/hello_world.log"
+    } > /etc/webhooks/hello_world.sh
+}
+#enregion Helper function
+
+# Install the GoLang Library
+install_golang_binary
+
+# Install and build webhook package
+make_webhook_binary
+
+# Configure webhook configurations directory
+
+# Create proxy template
+# createWebhookTemplateCommand="$cwd/hs-nginx-proxy --port $PROXY_TEMPLATE_NAME --template $PROXY_TEMPLATE_NAME"
+# echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
+
+# Add webhook worker supervisor config
+start_webhook_worker
