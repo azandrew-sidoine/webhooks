@@ -128,12 +128,14 @@ create_hooks_config() {
 }
 
 configure_webhook_config_dir() {
-    # Create webhook directory
-    mkdir /etc/webhooks \
-    # Create webhook logs directory
-    && mkdir /etc/webhooks/logs/ \
-    # Grant ownership to the specified command user
-    && chown -R $user /etc/webhooks
+    if ! [ -d "$WEBHOOKS_DIRECTORY" ]; then
+        # Create webhook directory
+        mkdir "$WEBHOOKS_DIRECTORY" \
+        # Create webhook logs directory
+        && mkdir "$WEBHOOKS_DIRECTORY/logs/" \
+        # Grant ownership to the specified command user
+        && chown -R $user "$WEBHOOKS_DIRECTORY"
+    fi 
 
     # Create the required webhooks configuration
     create_hooks_config
