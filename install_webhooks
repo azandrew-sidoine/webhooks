@@ -161,7 +161,7 @@ create_proxy_template() {
 if ! [ -z "$proxyTemplate" ]; then
         proxyTemplate="$proxyTemplate.$APP_PORT"
         echo "Creating Hestia Nginx template... $proxyTemplate"
-        createWebhookTemplateCommand="$CURRENT_WORKING_DIRECTORY/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate"
+        createWebhookTemplateCommand="$CURRENT_WORKING_DIRECTORY/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate --directory /usr/local/hestia/data/templates/web/nginx/php-fpm"
         echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
     fi
 }
