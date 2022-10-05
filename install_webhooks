@@ -129,10 +129,10 @@ create_hooks_config() {
     else
         {
             echo "-"
-            echo "\tid: \"test-script-hook\""
-            echo "\texecute-command: \"$WEBHOOKS_DIRECTORY/hooks/hello.sh\""
-            echo "\tcommand-working-directory: \"$WEBHOOKS_DIRECTORY\""
-            echo "\tresponse-message: \"Webhooks server in working state!\""
+            echo "  id: \"test-script-hook\""
+            echo "  execute-command: \"$WEBHOOKS_DIRECTORY/hooks/hello.sh\""
+            echo "  command-working-directory: \"$WEBHOOKS_DIRECTORY\""
+            echo "  response-message: \"Webhooks server in working state!\""
         } > "$WEBHOOKS_DIRECTORY/hooks/config.yml"
         {
             echo "#!/bin/bash"
