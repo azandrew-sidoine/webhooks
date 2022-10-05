@@ -157,7 +157,8 @@ configure_webhook_config_dir() {
 }
 
 create_proxy_template() {
-    if [ -z "$template" ]; then
+    if [ -z "$proxyTemplate" ]; then
+        echo "Creating Hestia Nginx template..."
         createWebhookTemplateCommand="$CURRENT_WORKING_DIRECTORY/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate"
         echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
     fi
