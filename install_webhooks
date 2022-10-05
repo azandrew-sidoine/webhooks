@@ -80,16 +80,15 @@ start_webhook_worker() {
 
 install_golang_binary() {
     # Download & Configure GoLang binary
-    wget "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.g" \
+    wget "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.g"
     # Removes previously installed go directory and install the current go
-    && rm -rf /usr/local/go && tar -C /usr/local -xzf "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz" \
+    rm -rf /usr/local/go && tar -C /usr/local -xzf "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
     # Remove go source
-    && rm "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
+    rm "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
 }
 
 uninstall_go_binary() {
-    rm -f $(command -v go) \
-    && rm -rf /usr/local/go
+    rm -f $(command -v go) && rm -rf /usr/local/go
 }
 
 cleanup_webhook_git_directory() {
@@ -97,11 +96,11 @@ cleanup_webhook_git_directory() {
 }
 
 make_webhook_binary() {
-    git clone https://github.com/adnanh/webhook.git webhook \
-    && mkdir $BINARY_DIRECTORY \
-    && cd webhook && go build -o $BINARY_DIRECTORY github.com/adnanh/webhook \
-    && ln -s "$BINARY_DIRECTORY/webhook" /usr/local/bin/webhook \
-    && cd $CURRENT_WORKING_DIRECTORY
+    git clone https://github.com/adnanh/webhook.git webhook
+    mkdir $BINARY_DIRECTORY
+    cd webhook && go build -o $BINARY_DIRECTORY github.com/adnanh/webhook
+    ln -s "$BINARY_DIRECTORY/webhook" /usr/local/bin/webhook
+    cd $CURRENT_WORKING_DIRECTORY
 }
 
 create_hooks_config() {
@@ -132,11 +131,11 @@ create_hooks_config() {
 configure_webhook_config_dir() {
     if ! [ -d "$WEBHOOKS_DIRECTORY" ]; then
         # Create webhook directory
-        mkdir "$WEBHOOKS_DIRECTORY" \
+        mkdir "$WEBHOOKS_DIRECTORY"
         # Create webhook logs directory
-        && mkdir "$WEBHOOKS_DIRECTORY/logs/" \
+        mkdir "$WEBHOOKS_DIRECTORY/logs/"
         # Grant ownership to the specified command user
-        && chown -R $user "$WEBHOOKS_DIRECTORY"
+        chown -R $user "$WEBHOOKS_DIRECTORY"
     fi 
 
     # Create the required webhooks configuration
