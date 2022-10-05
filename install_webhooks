@@ -114,7 +114,7 @@ make_webhook_binary() {
 }
 
 create_hooks_config() {
-    if ! [-d "$WEBHOOKS_DIRECTORY/hooks" ]; then
+    if ! [ -d "$WEBHOOKS_DIRECTORY/hooks" ]; then
         echo "Creating hooks directory at $WEBHOOKS_DIRECTORY/hooks ..."
         mkdir -p "$WEBHOOKS_DIRECTORY/hooks"
     fi
