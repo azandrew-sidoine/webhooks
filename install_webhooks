@@ -80,10 +80,14 @@ start_webhook_worker() {
 
 install_golang_binary() {
     # Download & Configure GoLang binary
-    wget "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz"
+    wget -O "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz"
     # Removes previously installed go directory and install the current go
-    rm -rf /usr/local/go && tar -C /usr/local -xzf "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
+    echo "Cleaning up previous go installation..."
+    rm -rf /usr/local/go
+    echo "Extracting go binaries..."
+    tar -C /usr/local -xzf "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
     # Remove go source
+    echo "Removing ving installed go zip files..."
     rm "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
 }
 
@@ -96,9 +100,12 @@ cleanup_webhook_git_directory() {
 }
 
 make_webhook_binary() {
+    cd $CURRENT_WORKING_DIRECTORY
     git clone https://github.com/adnanh/webhook.git webhook
-    mkdir $BINARY_DIRECTORY
+    rm -rf $BINARY_DIRECTORY && mkdir $BINARY_DIRECTORY
+    echo "Building webhooks binary..."
     cd webhook && go build -o $BINARY_DIRECTORY github.com/adnanh/webhook
+    echo "Linking webhook binaries..."
     ln -s "$BINARY_DIRECTORY/webhook" /usr/local/bin/webhook
     cd $CURRENT_WORKING_DIRECTORY
 }
