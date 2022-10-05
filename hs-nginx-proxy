@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from os import path
+from os import path, remove
 from string import Template
 import sys
 import __future__
@@ -240,6 +240,8 @@ def create_template(port, template_type, upstream = 'websocket'):
 
 
 def write_template(_path, template):
+    if path.exists(_path):
+        remove(_path)
     if not path.exists(_path):
         with open(_path, 'wb') as file:
             file.write(bytes(template, 'utf8'))
