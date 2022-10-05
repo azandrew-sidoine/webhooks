@@ -118,7 +118,7 @@ create_hooks_config() {
         echo "Creating hooks directory at $WEBHOOKS_DIRECTORY/hooks ..."
         mkdir -p "$WEBHOOKS_DIRECTORY/hooks"
     fi
-    if [ -z "$configPath" ] && [ -f "$configPath" ] ; then
+    if ! [ -z "$configPath" ] && [ -f "$configPath" ] ; then
         hooksConfig=$(<"$configPath")
         extension=$(echo "$configPath" | cut -d "." -f2)
         if ! [ -z $extension ]; then
@@ -158,7 +158,7 @@ configure_webhook_config_dir() {
 }
 
 create_proxy_template() {
-    if [ -z "$proxyTemplate" ]; then
+if ! [ -z "$proxyTemplate" ]; then
         echo "Creating Hestia Nginx template..."
         createWebhookTemplateCommand="$CURRENT_WORKING_DIRECTORY/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate"
         echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
