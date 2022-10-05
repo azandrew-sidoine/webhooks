@@ -28,8 +28,9 @@ BINARY_DIRECTORY=${CURRENT_WORKING_DIRECTORY}/.bin
 WEBHOOKS_DIRECTORY=/etc/webhooks
 GO_VERSION="1.19.1"
 user=${runAs:-$USER}
-APP_PORT=5500
+APP_PORT=${port:-5500}
 proxyTemplate=${template}
+webhookConfigPath="$WEBHOOKS_DIRECTORY/hooks/config.yml"
 
 #region Helper functions
 start_webhook_worker() {
@@ -58,7 +59,7 @@ start_webhook_worker() {
     {
         echo "[program:webhooks-worker]"
         echo "process_name=%(program_name)s_%(process_num)02d"
-        echo "command=/usr/local/bin/webhook -ip 127.0.0.1 -hotreload -port 8888 -logfile $WEBHOOKS_DIRECTORY/logs/webhooks.logs -hooks $WEBHOOKS_DIRECTORY/hooks.yml --verbose"
+        echo "command=/usr/local/bin/webhook -ip 0.0.0.0 -hotreload -port $APP_PORT -logfile $WEBHOOKS_DIRECTORY/logs/webhooks.logs -hooks $1 --verbose"
         echo "autostart=true"
         echo "autorestart=true"
         echo "stopasgroup=true"
@@ -110,7 +111,8 @@ create_hooks_config() {
         if ! [ -z $extension ]; then
             extension='yml'
         fi
-        echo "$hooksConfig" > "$WEBHOOKS_DIRECTORY/hooks/config.$extension"
+        webhookConfigPath="$WEBHOOKS_DIRECTORY/hooks/config.$extension"
+        echo "$hooksConfig" > "$webhookConfigPath"
     else
         {
             echo "-"
@@ -168,4 +170,4 @@ configure_webhook_config_dir
 create_proxy_template
 
 # Add webhook worker supervisor config
-start_webhook_worker
+start_webhook_worker "$webhookConfigPath"
