@@ -80,7 +80,7 @@ start_webhook_worker() {
 
 install_golang_binary() {
     # Download & Configure GoLang binary
-    wget "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.g"
+    wget "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz"
     # Removes previously installed go directory and install the current go
     rm -rf /usr/local/go && tar -C /usr/local -xzf "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
     # Remove go source
