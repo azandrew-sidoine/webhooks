@@ -127,20 +127,24 @@ create_hooks_config() {
         webhookConfigPath="$WEBHOOKS_DIRECTORY/hooks/config.$extension"
         echo "$hooksConfig" > "$webhookConfigPath"
     else
-        {
-            echo "-"
-            echo "  id: \"test-script-hook\""
-            echo "  execute-command: \"$WEBHOOKS_DIRECTORY/hooks/hello.sh\""
-            echo "  command-working-directory: \"$WEBHOOKS_DIRECTORY\""
-            echo "  response-message: \"Webhooks server in working state!\""
-        } > "$WEBHOOKS_DIRECTORY/hooks/config.yml"
-        {
-            echo "#!/bin/bash"
-            echo ""
-            echo "echo 'Hello World' >> $WEBHOOKS_DIRECTORY/logs/hello.log"
-        } > "$WEBHOOKS_DIRECTORY/hooks/hello.sh"
-        chmod +x "$WEBHOOKS_DIRECTORY/hooks/hello.sh"
-        chown -R $user "$WEBHOOKS_DIRECTORY/hooks/config.yml"
+        if ! [ -f "$WEBHOOKS_DIRECTORY/hooks/config.yml" ]; then
+            {
+                echo "-"
+                echo "  id: \"test-script-hook\""
+                echo "  execute-command: \"$WEBHOOKS_DIRECTORY/hooks/hello.sh\""
+                echo "  command-working-directory: \"$WEBHOOKS_DIRECTORY\""
+                echo "  response-message: \"Webhooks server in working state!\""
+            } > "$WEBHOOKS_DIRECTORY/hooks/config.yml"
+            {
+                echo "#!/bin/bash"
+                echo ""
+                echo "echo 'Hello World' >> $WEBHOOKS_DIRECTORY/logs/hello.log"
+            } > "$WEBHOOKS_DIRECTORY/hooks/hello.sh"
+            chmod +x "$WEBHOOKS_DIRECTORY/hooks/hello.sh"
+            chown -R $user "$WEBHOOKS_DIRECTORY/hooks/config.yml"
+        else
+            echo "Warning : Running wehbooks with existing configuration file was found at $WEBHOOKS_DIRECTORY/hooks/config.yml."
+        fi
     fi
 }
 
