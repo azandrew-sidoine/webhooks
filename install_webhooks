@@ -156,10 +156,13 @@ configure_webhook_config_dir() {
         mkdir "$WEBHOOKS_DIRECTORY/logs/"
         # Grant ownership to the specified command user
         chown -R $user "$WEBHOOKS_DIRECTORY"
-    fi 
+    fi
 
     # Create the required webhooks configuration
     create_hooks_config
+
+    # Make the log file writable by the user process
+    chown $user "$WEBHOOKS_DIRECTORY/logs/webhooks.logs" && chmod 555 "$WEBHOOKS_DIRECTORY/logs/webhooks.logs"
 }
 
 create_proxy_template() {
