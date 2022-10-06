@@ -23,14 +23,20 @@ do
    esac
 done
 
-CURRENT_WORKING_DIRECTORY="$(pwd)"
-BINARY_DIRECTORY=${CURRENT_WORKING_DIRECTORY}/.bin
+
 WEBHOOKS_DIRECTORY=/etc/webhooks
 GO_VERSION="1.19.1"
 user=${runAs:-$USER}
 APP_PORT=${port:-5500}
 proxyTemplate=${template}
 webhookConfigPath="$WEBHOOKS_DIRECTORY/hooks/config.yml"
+
+if [ -d "/home/$user" ]; then
+    WORKDIR="/home/$user"
+else
+    WORKDIR="$(pwd)"
+fi
+BINARY_DIRECTORY=${WORKDIR}/.bin
 
 #region Helper functions
 start_webhook_worker() {
@@ -80,18 +86,18 @@ start_webhook_worker() {
 
 install_golang_binary() {
     # Download & Configure GoLang binary
-    wget -O "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz"
+    wget -O "$WORKDIR/go$GO_VERSION.linux-amd64.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz"
     # Removes previously installed go directory and install the current go
     echo "Cleaning up previous go installation..."
     rm -rf /usr/local/go
     echo "Extracting go binaries..."
-    tar -C /usr/local -xzf "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
+    tar -C /usr/local -xzf "$WORKDIR/go$GO_VERSION.linux-amd64.tar.gz"
     echo 'Exporting go binaries path...'
     export PATH=/usr/local/go/bin:$PATH
     echo "Exported go binary path... $PATH"
     # Remove go source
     echo "Removing ving installed go zip files..."
-    rm "$CURRENT_WORKING_DIRECTORY/go$GO_VERSION.linux-amd64.tar.gz"
+    rm "$WORKDIR/go$GO_VERSION.linux-amd64.tar.gz"
 }
 
 uninstall_go_binary() {
@@ -99,18 +105,19 @@ uninstall_go_binary() {
 }
 
 cleanup_webhook_git_directory() {
-    rm -rf "$CURRENT_WORKING_DIRECTORY/webhook"
+    rm -rf "$WORKDIR/webhook"
 }
 
 make_webhook_binary() {
-    cd $CURRENT_WORKING_DIRECTORY
+    cd $WORKDIR
     git clone https://github.com/adnanh/webhook.git webhook
     rm -rf $BINARY_DIRECTORY && mkdir $BINARY_DIRECTORY
     echo "Building webhooks binary..."
     cd webhook && go build -o $BINARY_DIRECTORY github.com/adnanh/webhook
+    chown $user "$BINARY_DIRECTORY/webhook" && chmod +x "$BINARY_DIRECTORY/webhook"
     echo "Linking webhook binaries..."
     rm -f /usr/local/bin/webhook && ln -s "$BINARY_DIRECTORY/webhook" /usr/local/bin/webhook
-    cd $CURRENT_WORKING_DIRECTORY
+    cd $WORKDIR
 }
 
 create_hooks_config() {
@@ -166,10 +173,10 @@ configure_webhook_config_dir() {
 }
 
 create_proxy_template() {
-if ! [ -z "$proxyTemplate" ]; then
+if ! [ -z "$proxyTemplate" ] && [ -f "$WORKDIR/hs-nginx-proxy" ] ; then
         proxyTemplate="$proxyTemplate.$APP_PORT"
         echo "Creating Hestia Nginx template... $proxyTemplate"
-        createWebhookTemplateCommand="$CURRENT_WORKING_DIRECTORY/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate --directory /usr/local/hestia/data/templates/web/nginx/php-fpm"
+        createWebhookTemplateCommand="$WORKDIR/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate --directory /usr/local/hestia/data/templates/web/nginx/php-fpm"
         echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
     fi
 }
