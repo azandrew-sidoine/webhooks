@@ -64,7 +64,7 @@ start_webhook_worker() {
         echo "autorestart=true"
         echo "stopasgroup=true"
         echo "killasgroup=true"
-        echo "user=root"
+        echo "user=$user"
         echo "numprocs=1"
         echo "redirect_stderr=true"
         echo "stdout_logfile=$WEBHOOKS_DIRECTORY/logs/webhooks.logs"
@@ -140,6 +140,7 @@ create_hooks_config() {
             echo "echo 'Hello World' >> $WEBHOOKS_DIRECTORY/logs/hello.log"
         } > "$WEBHOOKS_DIRECTORY/hooks/hello.sh"
         chmod +x "$WEBHOOKS_DIRECTORY/hooks/hello.sh"
+        chown -R $user "$WEBHOOKS_DIRECTORY/hooks/config.yml"
     fi
 }
 
