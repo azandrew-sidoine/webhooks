@@ -111,7 +111,8 @@ cleanup_webhook_git_directory() {
 make_webhook_binary() {
     cd $WORKDIR
     git clone https://github.com/adnanh/webhook.git webhook
-    rm -rf $BINARY_DIRECTORY && mkdir $BINARY_DIRECTORY
+    echo "Creating binary directory and setting required privileges"
+    rm -rf $BINARY_DIRECTORY && mkdir $BINARY_DIRECTORY && chown -R $user "$BINARY_DIRECTORY"
     echo "Building webhooks binary..."
     cd webhook && go build -o $BINARY_DIRECTORY github.com/adnanh/webhook
     chown $user "$BINARY_DIRECTORY/webhook" && chmod +x "$BINARY_DIRECTORY/webhook"
