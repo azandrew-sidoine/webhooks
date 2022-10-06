@@ -24,12 +24,18 @@ do
 done
 
 
+# Program constants
 WEBHOOKS_DIRECTORY=/etc/webhooks
+SCRIPT_DIR=${BASH_SOURCE[0]}
 GO_VERSION="1.19.1"
-user=${runAs:-$USER}
 APP_PORT=${port:-5500}
+
+# Program options
+user=${runAs:-$USER}
 proxyTemplate=${template}
 webhookConfigPath="$WEBHOOKS_DIRECTORY/hooks/config.yml"
+
+echo "Program $0: Executing script located at $SCRIPT_DIR"
 
 if [ -d "/home/$user" ]; then
     WORKDIR="/home/$user"
