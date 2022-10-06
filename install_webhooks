@@ -26,7 +26,8 @@ done
 
 # Program constants
 WEBHOOKS_DIRECTORY=/etc/webhooks
-SCRIPT_DIR=${BASH_SOURCE[0]}
+SCRIPT_REALPATH=$(realpath $0)
+SCRIPT_DIR=$(dirname -- $SCRIPT_REALPATH)
 GO_VERSION="1.19.1"
 APP_PORT=${port:-5500}
 
@@ -35,7 +36,7 @@ user=${runAs:-$USER}
 proxyTemplate=${template}
 webhookConfigPath="$WEBHOOKS_DIRECTORY/hooks/config.yml"
 
-echo "Program $0: Executing script located at $SCRIPT_DIR"
+echo "Program: Executing script located at $SCRIPT_DIR"
 
 if [ -d "/home/$user" ]; then
     WORKDIR="/home/$user"
@@ -180,10 +181,10 @@ configure_webhook_config_dir() {
 }
 
 create_proxy_template() {
-if ! [ -z "$proxyTemplate" ] && [ -f "$WORKDIR/hs-nginx-proxy" ] ; then
+if ! [ -z "$proxyTemplate" ] && [ -f "$SCRIPT_DIR/hs-nginx-proxy" ] ; then
         proxyTemplate="$proxyTemplate.$APP_PORT"
         echo "Creating Hestia Nginx template... $proxyTemplate"
-        createWebhookTemplateCommand="$WORKDIR/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate --directory /usr/local/hestia/data/templates/web/nginx/php-fpm"
+        createWebhookTemplateCommand="$SCRIPT_DIR/hs-nginx-proxy --port $APP_PORT --template $proxyTemplate --directory /usr/local/hestia/data/templates/web/nginx/php-fpm"
         echo "$(eval $createWebhookTemplateCommand)" >> /dev/null
     fi
 }
