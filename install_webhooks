@@ -162,7 +162,7 @@ configure_webhook_config_dir() {
     create_hooks_config
 
     # Make the log file writable by the user process
-    chown $user "$WEBHOOKS_DIRECTORY/logs/webhooks.logs" && chmod 555 "$WEBHOOKS_DIRECTORY/logs/webhooks.logs"
+    chown $user "$WEBHOOKS_DIRECTORY/logs/webhooks.logs" && chmod 766 "$WEBHOOKS_DIRECTORY/logs/webhooks.logs"
 }
 
 create_proxy_template() {
