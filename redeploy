@@ -2,34 +2,55 @@
 
 # Add server startup code below
 
-helpFunction()
-{
-   echo ""
-   echo "Usage: $0 -i <DOCKER_IMAGE_NAME> -d <APPLICATION_DIRECTORY>"
-   echo "\t-i Docker image name"
-   echo "\t-d Application Directory absolute path"
-   exit 1 # Exit script after printing help
+helpFunction() {
+    echo ""
+    echo "Usage: $0 -i <DOCKER_IMAGE_NAME> -d <APPLICATION_DIRECTORY>"
+    echo "\t-i Docker image name"
+    echo "\t-d Application Directory absolute path"
+    echo "\t-u Docker login user name (Default: liksoft)"
+    echo "\t-p Docker login password path"
+    exit 1 # Exit script after printing help
 }
 
-while getopts "i:d:" opt
-do
-   case "$opt" in
-      i ) image="$OPTARG" ;;
-      d ) directory="$OPTARG" ;;
-      ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
-   esac
+while getopts "i:d:p:u:" opt; do
+    case "$opt" in
+    i) image="$OPTARG" ;;
+    d) directory="$OPTARG" ;;
+    p) passwordPath="$OPTARG" ;;
+    u) username="$OPTARG" ;;
+    ?) helpFunction ;; # Print helpFunction in case parameter is non-existent
+    esac
 done
 
-if [ -z "$image" ] || [ -z "$directory" ]; then
+if [ -z $image ] || [ -z $directory ] || [ -z $passwordPath ]; then
     helpFunction
 else
+    # Login to docker hub before fetching containers
+    cat $passwordPath | docker login --username $username --password-stdin
     # Pull Docker Image
     docker pull $image
+    binary=$(command -v git)
+    compose=$(command -v docker-compose)
+    if [ -x "$compose" ]; then
+        composeCommand="docker-compose"
+    else
+        docker=$(command -v docker)
+        if [ -x "$docker" ]; then
+            composeCommand="docker compose"
+        else
+            echo "Docker executable missing from the system. Exiting..."
+            exit 1
+        fi
 
-    command="cd $directory && /usr/bin/docker compose down && /usr/bin/docker compose rm && /usr/bin/docker compose --env-file .env up -d"
-
+    fi
+    if [ -x "$binary" ]; then
+        command="cd $directory && $binary pull && $composeCommand down && $composeCommand rm && $composeCommand --env-file .env up -d"
+    else
+        command="cd $directory && $composeCommand down && $composeCommand rm && $composeCommand --env-file .env up -d"
+    fi
+    # command="cd $directory && /usr/bin/docker compose down && /usr/bin/docker compose rm && /usr/bin/docker compose --env-file .env up -d"
     # Execute command and start or restart the application stack
-    echo $(eval "$command") >> /dev/null
+    echo $(eval "$command") >>/dev/null
 
     exit 0
-fi;
+fi
