@@ -13,7 +13,7 @@ HTTP_TEMPLATE = """
 #=======================================================================#
 
 server {
-    listen      %ip%:%web_port%;
+    listen      %ip%:80;
     server_name %domain_idn% %alias_idn%;
     root        %docroot%;
     index       index.php index.html index.htm;
@@ -61,7 +61,7 @@ HTTPS_TEMPLATE = """
 #=======================================================================#
 
 server {
-    listen      %ip%:%web_ssl_port% ssl http2;
+    listen      %ip%:443 ssl http2;
     server_name %domain_idn% %alias_idn%;
     root        %sdocroot%;
     index       index.php index.html index.htm;
