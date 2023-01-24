@@ -6,6 +6,83 @@ import sys
 import __future__
 import argparse
 
+OCTANE_HTTP_TEMPLATE = """
+#=======================================================================#
+# Default Web Domain Template                                           #
+# DO NOT MODIFY THIS FILE! CHANGES WILL BE LOST WHEN REBUILDING DOMAINS #
+#=======================================================================#
+
+map $$http_upgrade $$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen      %ip%:80;
+    server_name %domain_idn% %alias_idn%;
+    root        %docroot%;
+    index       index.php index.html index.htm;
+    access_log  /var/log/nginx/domains/%domain%.log combined;
+    access_log  /var/log/nginx/domains/%domain%.bytes bytes;
+    error_log   /var/log/nginx/domains/%domain%.error.log error;
+        
+    include %home%/%user%/conf/web/%domain%/nginx.forcessl.conf*;
+
+    charset utf-8;
+
+    location /index.php {
+        try_files /not_exists @octane;
+    }
+
+    location / {
+        try_files $$uri $$uri/ @octane;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location @octane {
+        set $$suffix "";
+ 
+        if ($$uri = /index.php) {
+            set $$suffix ?$$query_string;
+        }
+ 
+        proxy_http_version 1.1;
+        proxy_set_header    Upgrade $$http_upgrade;
+        # proxy_set_header  Connection keep-alive;
+        proxy_cache_bypass  $$http_upgrade;
+        proxy_set_header    Host $$host;
+        proxy_set_header    Scheme $$scheme;
+        proxy_set_header    SERVER_PORT $$server_port;
+        proxy_set_header    REMOTE_ADDR $$remote_addr;
+        proxy_set_header    X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $$scheme;
+        proxy_set_header    Connection $$connection_upgrade;
+ 
+        proxy_pass         http://127.0.0.1:$port$$suffix;
+    }
+
+    location /error/ {
+        alias   %home%/%user%/web/%domain%/document_errors/;
+    }
+
+    location ~ /\.(?!well-known\/) { 
+        deny all; 
+        return 404;
+    }
+
+    location /vstats/ {
+        alias   %home%/%user%/web/%domain%/stats/;
+        include %home%/%user%/web/%domain%/stats/auth.conf*;
+    }
+
+    include     /etc/nginx/conf.d/phpmyadmin.inc*;
+    include     /etc/nginx/conf.d/phppgadmin.inc*;
+    include     %home%/%user%/conf/web/%domain%/nginx.conf_*;
+}
+    """
+
 HTTP_TEMPLATE = """
 #=======================================================================#
 # Default Web Domain Template                                           #
@@ -39,8 +116,8 @@ server {
     }
 
     location ~ /\.(?!well-known\/) { 
-    deny all; 
-    return 404;
+        deny all; 
+        return 404;
     }
 
     location /vstats/ {
@@ -51,6 +128,87 @@ server {
     include     /etc/nginx/conf.d/phpmyadmin.inc*;
     include     /etc/nginx/conf.d/phppgadmin.inc*;
     include     %home%/%user%/conf/web/%domain%/nginx.conf_*;
+}
+    """
+
+
+OCTANE_HTTPS_TEMPLATE = """
+#=======================================================================#
+# Default Web Domain Template                                           #
+# DO NOT MODIFY THIS FILE! CHANGES WILL BE LOST WHEN REBUILDING DOMAINS #
+#=======================================================================#
+
+map $$http_upgrade $$connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen      %ip%:443 ssl http2;
+    server_name %domain_idn% %alias_idn%;
+    root        %sdocroot%;
+    index       index.php index.html index.htm;
+    access_log  /var/log/nginx/domains/%domain%.log combined;
+    access_log  /var/log/nginx/domains/%domain%.bytes bytes;
+    error_log   /var/log/nginx/domains/%domain%.error.log error;
+
+    ssl_certificate      %ssl_pem%;
+    ssl_certificate_key  %ssl_key%;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    include %home%/%user%/conf/web/%domain%/nginx.hsts.conf*;
+    
+    charset utf-8;
+
+    location /index.php {
+        try_files /not_exists @octane;
+    }
+
+    location / {
+        try_files $$uri $$uri/ @octane;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location @octane {
+        set $$suffix "";
+ 
+        if ($$uri = /index.php) {
+            set $$suffix ?$$query_string;
+        }
+ 
+        proxy_http_version 1.1;
+        proxy_set_header    Upgrade $$http_upgrade;
+        # proxy_set_header  Connection keep-alive;
+        proxy_cache_bypass  $$http_upgrade;
+        proxy_set_header    Host $$host;
+        proxy_set_header    Scheme $$scheme;
+        proxy_set_header    SERVER_PORT $$server_port;
+        proxy_set_header    REMOTE_ADDR $$remote_addr;
+        proxy_set_header    X-Forwarded-For $$proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $$scheme;
+        proxy_set_header    Connection $$connection_upgrade;
+ 
+        proxy_pass         http://127.0.0.1:$port$$suffix;
+    }
+
+    location /error/ {
+        alias   %home%/%user%/web/%domain%/document_errors/;
+    }
+
+    location ~ /\.(?!well-known\/) { 
+        deny all; 
+        return 404;
+    }
+
+    location /vstats/ {
+        alias   %home%/%user%/web/%domain%/stats/;
+        include %home%/%user%/web/%domain%/stats/auth.conf*;
+    }
+
+    include     %home%/%user%/conf/web/%domain%/nginx.ssl.conf_*;
 }
     """
 
@@ -92,8 +250,8 @@ server {
     }
 
     location ~ /\.(?!well-known\/) { 
-    deny all; 
-    return 404;
+        deny all; 
+        return 404;
     }
 
     location /vstats/ {
@@ -150,8 +308,8 @@ server {
     }
 
     location ~ /\.(?!well-known\/) { 
-    deny all; 
-    return 404;
+        deny all; 
+        return 404;
     }
 
     location /vstats/ {
@@ -215,8 +373,8 @@ server {
     }
 
     location ~ /\.(?!well-known\/) { 
-    deny all; 
-    return 404;
+        deny all; 
+        return 404;
     }
 
     location /vstats/ {
@@ -229,14 +387,23 @@ server {
     """
 
 
-def create_ssl_template(port, template_type, upstream = 'websocket'):
-    template = {'ws': WSS_TEMPLATE, 'default': HTTPS_TEMPLATE }.get(template_type)
+def create_ssl_template(port, template_type, upstream='websocket'):
+    template = {'ws': WSS_TEMPLATE,
+                'default': HTTPS_TEMPLATE}.get(template_type)
     return Template(template if template is not None else HTTPS_TEMPLATE).substitute(port=port, upstream=upstream)
 
 
-def create_template(port, template_type, upstream = 'websocket'):
-    template = {'ws': WS_TEMPLATE,'default': HTTP_TEMPLATE }.get(template_type)
+def create_template(port, template_type, upstream='websocket'):
+    template = {'ws': WS_TEMPLATE, 'default': HTTP_TEMPLATE}.get(template_type)
     return Template(template if template is not None else HTTPS_TEMPLATE).substitute(port=port, upstream=upstream)
+
+
+def octane_create_ssl_template(port):
+    return Template(OCTANE_HTTPS_TEMPLATE).substitute(port=port)
+
+
+def octane_create_template(port):
+    return Template(OCTANE_HTTP_TEMPLATE).substitute(port=port)
 
 
 def write_template(_path, template):
@@ -245,6 +412,12 @@ def write_template(_path, template):
     if not path.exists(_path):
         with open(_path, 'wb') as file:
             file.write(bytes(template, 'utf8'))
+
+
+def create_templates(args):
+    if 'octane' in args and True == args.octane:
+        return (octane_create_template(args.port), octane_create_ssl_template(args.port))
+    return (create_ssl_template(args.port, args.type, args.name if args.name is not None else 'websocket'), create_template(args.port, args.type, args.name if args.name is not None else 'websocket'))
 
 
 def main():
@@ -259,21 +432,30 @@ def main():
 
     # Create the template
     print('Creating template for {}'.format(args.template))
-    template_ssl = create_ssl_template(args.port, args.type, args.name if args.name is not None else 'websocket')
-    template = create_template(args.port, args.type, args.name if args.name is not None else 'websocket')
+    template, template_ssl = create_templates(args)
     write_template(
         f"{path.join(path.abspath(templates_dir), args.template)}.stpl", template_ssl)
     write_template(
         f"{path.join(path.abspath(templates_dir), args.template)}.tpl", template)
 
+
 def prepare_program():
-    program = argparse.ArgumentParser(description='Hestia Nginx Template Generator')
-    program.add_argument('--directory', help="Hestia Nginx Templates Directory", default='/usr/local/hestia/data/templates/web/nginx')
-    program.add_argument('--template', required=True, help='Web App name', type=str)
-    program.add_argument('--port', '-p', help='Web application running port', required=True, type=int)
-    program.add_argument('--type', '-t', help='Nginx templete type (Ex: default|websocket)', default='default', choices=['default', 'websocket'], type=str)
-    program.add_argument('--name', '-n', help='Websocket upstream server name', default=None, type=str)
-    program.add_argument('--version', action='version', version='%(prog)s 0.1.1')
+    program = argparse.ArgumentParser(
+        description='Hestia Nginx Template Generator')
+    program.add_argument('--directory', help="Hestia Nginx Templates Directory",
+                         default='/usr/local/hestia/data/templates/web/nginx')
+    program.add_argument('--template', required=True,
+                         help='Web App name', type=str)
+    program.add_argument(
+        '--port', '-p', help='Web application running port', required=True, type=int)
+    program.add_argument('--type', '-t', help='Nginx templete type (Ex: default|websocket)',
+                         default='default', choices=['default', 'websocket'], type=str)
+    program.add_argument(
+        '--name', '-n', help='Websocket upstream server name', default=None, type=str)
+    program.add_argument('--version', action='version',
+                         version='%(prog)s 0.1.1')
+    program.add_argument(
+        '--octane', action=argparse.BooleanOptionalAction, type=bool)
     return program
 
 
