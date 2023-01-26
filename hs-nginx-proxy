@@ -244,7 +244,7 @@ server {
     ssl_stapling_verify on;
 
     include %home%/%user%/conf/web/%domain%/nginx.hsts.conf*;
-    
+
     charset utf-8;
 
     location / {
@@ -477,7 +477,7 @@ def prepare_program():
     program.add_argument('--version', action='version',
                          version='%(prog)s 0.1.1')
     program.add_argument(
-        '--octane', action=argparse.BooleanOptionalAction, type=bool)
+        '--octane', help="Whether the template is generated for a Laravel octane application", default=False, type=bool)
     return program
 
 
