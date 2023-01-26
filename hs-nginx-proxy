@@ -100,13 +100,24 @@ server {
         
     include %home%/%user%/conf/web/%domain%/nginx.forcessl.conf*;
 
+    charset utf-8;
+
     location / {
-        proxy_pass         http://127.0.0.1:$port;
+        set $$suffix "";
+ 
+        if ($$uri = /index.php) {
+            set $$suffix ?$$query_string;
+        }
+        proxy_pass         http://127.0.0.1:$port$$suffix;
         proxy_http_version 1.1;
         proxy_set_header   Upgrade $$http_upgrade;
         proxy_set_header   Connection keep-alive;
         proxy_set_header   Host $$host;
         proxy_cache_bypass $$http_upgrade;
+        proxy_set_header   Scheme $$scheme;
+        proxy_set_header   SERVER_PORT $$server_port;
+        proxy_set_header   REMOTE_ADDR $$remote_addr;
+        proxy_set_header   X-Real-IP $$remote_addr;
         proxy_set_header   X-Forwarded-For $$proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto $$scheme;
     }
@@ -233,14 +244,25 @@ server {
     ssl_stapling_verify on;
 
     include %home%/%user%/conf/web/%domain%/nginx.hsts.conf*;
+    
+    charset utf-8;
 
     location / {
-        proxy_pass         http://127.0.0.1:$port;
+        set $$suffix "";
+ 
+        if ($$uri = /index.php) {
+            set $$suffix ?$$query_string;
+        }
+        proxy_pass         http://127.0.0.1:$port$$suffix;
         proxy_http_version 1.1;
         proxy_set_header   Upgrade $$http_upgrade;
         proxy_set_header   Connection keep-alive;
         proxy_set_header   Host $$host;
         proxy_cache_bypass $$http_upgrade;
+        proxy_set_header   Scheme $$scheme;
+        proxy_set_header   SERVER_PORT $$server_port;
+        proxy_set_header   REMOTE_ADDR $$remote_addr;
+        proxy_set_header   X-Real-IP $$remote_addr;
         proxy_set_header   X-Forwarded-For $$proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto $$scheme;
     }
