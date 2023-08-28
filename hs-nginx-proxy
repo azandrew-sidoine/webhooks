@@ -18,7 +18,8 @@ map $$http_upgrade $$connection_upgrade {
 }
 
 server {
-    listen      %ip%:80;
+    listen      80;
+    listen  	[::]:80;
     server_name %domain_idn% %alias_idn%;
     root        %docroot%;
     index       index.php index.html index.htm;
@@ -90,7 +91,8 @@ HTTP_TEMPLATE = """
 #=======================================================================#
 
 server {
-    listen      %ip%:80;
+    listen      80;
+    listen  	[::]:80;
     server_name %domain_idn% %alias_idn%;
     root        %docroot%;
     index       index.php index.html index.htm;
@@ -155,7 +157,8 @@ map $$http_upgrade $$connection_upgrade {
 }
 
 server {
-    listen      %ip%:443 ssl http2;
+    listen      443 ssl http2;
+    listen  	[::]:443;
     server_name %domain_idn% %alias_idn%;
     root        %sdocroot%;
     index       index.php index.html index.htm;
@@ -230,7 +233,8 @@ HTTPS_TEMPLATE = """
 #=======================================================================#
 
 server {
-    listen      %ip%:443 ssl http2;
+    listen      443 ssl http2;
+    listen  	[::]:443;
     server_name %domain_idn% %alias_idn%;
     root        %sdocroot%;
     index       index.php index.html index.htm;
@@ -300,7 +304,7 @@ upstream $upstream {
 }
 
 server {
-    listen      %ip%:%web_port%;
+    listen      %web_port%;
     server_name %domain_idn% %alias_idn%;
     root        %docroot%;
     index       index.php index.html index.htm;
@@ -360,7 +364,7 @@ upstream $upstream {
 }
 
 server {
-    listen      %ip%:%web_ssl_port% ssl;
+    listen      %web_ssl_port% ssl;
     server_name %domain_idn% %alias_idn%;
     # root      %sdocroot%;
     # index     index.php index.html index.htm;
