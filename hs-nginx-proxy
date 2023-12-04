@@ -438,7 +438,7 @@ def write_template(_path, template):
 
 def create_templates(args):
     if 'octane' in args and True == args.octane:
-        return (octane_create_template(args.port), octane_create_ssl_template(args.port))
+        return (octane_create_ssl_template(args.port), octane_create_template(args.port))
     return (create_ssl_template(args.port, args.type, args.name if args.name is not None else 'websocket'), create_template(args.port, args.type, args.name if args.name is not None else 'websocket'))
 
 
@@ -454,11 +454,13 @@ def main():
 
     # Create the template
     print('Creating template for {}'.format(args.template))
-    template, template_ssl = create_templates(args)
+    template_ssl, template = create_templates(args)
     write_template(
         f"{path.join(path.abspath(templates_dir), args.template)}.stpl", template_ssl)
     write_template(
         f"{path.join(path.abspath(templates_dir), args.template)}.tpl", template)
+    # Create the template
+    print('{} template created successfully!'.format(args.template))
 
 
 def prepare_program():
