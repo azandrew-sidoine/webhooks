@@ -29,4 +29,4 @@ The repository also comes with a `Dockerfile` that can be use to create a docker
 
 The rrepository contains an utility for creating hestiaCP proxy host template:
 
-> hs-nginx-proxy --directory <PATH_TO_TEMPLATES_DIRECTORY> --template <TEMPLATE_NAME> --port <PROXY_SERVER_PORT>
+> ./nginx --directory <PATH_TO_TEMPLATES_DIRECTORY> --template <TEMPLATE_NAME> --port <PROXY_SERVER_PORT>

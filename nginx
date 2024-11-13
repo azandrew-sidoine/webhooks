@@ -285,7 +285,7 @@ server {
 }
     """
 
-WS_TEMPLATE = """
+UPSTREAM_TEMPLATE = """
 #=======================================================================#
 # Default Web Domain Template                                           #
 # DO NOT MODIFY THIS FILE! CHANGES WILL BE LOST WHEN REBUILDING DOMAINS #
@@ -296,7 +296,7 @@ map $$http_upgrade $$connection_upgrade {
     '' close;
 }
 upstream $upstream {
-    server 127.0.0.1:$port;
+$proxies
 }
 
 server {
@@ -345,7 +345,7 @@ server {
 }
     """
 
-WSS_TEMPLATE = """
+HTTPS_UPSTREAM_TEMPLATE = """
 #=======================================================================#
 # Default Web Domain Template                                           #
 # DO NOT MODIFY THIS FILE! CHANGES WILL BE LOST WHEN REBUILDING DOMAINS #
@@ -356,7 +356,7 @@ map $$http_upgrade $$connection_upgrade {
     '' close;
 }
 upstream $upstream {
-    server 127.0.0.1:$port;
+$proxies
 }
 
 server {
@@ -407,25 +407,33 @@ server {
     include     %home%/%user%/conf/web/%domain%/nginx.ssl.conf_*;
 }
     """
+    
+def create_upstreams_port(port: str) -> tuple[str, str]:
+    ports = port.split(",") if "," in port else [port]
+    proxies = "\n".join(["    server 127.0.0.1:{};".format(x) for x in ports])
+    return (proxies, int(ports[0]))
 
 
-def create_ssl_template(port, template_type, upstream='websocket'):
-    template = {'ws': WSS_TEMPLATE,
-                'default': HTTPS_TEMPLATE}.get(template_type)
-    return Template(template if template is not None else HTTPS_TEMPLATE).substitute(port=port, upstream=upstream)
+def create_ssl_template(port: str, template_type: str, upstream='websocket'):
+    template = {'webproxy': HTTPS_UPSTREAM_TEMPLATE, 'default': HTTPS_TEMPLATE}.get(template_type)
+    proxies, port = create_upstreams_port(port)
+    return Template(template if template is not None else HTTPS_TEMPLATE).substitute(proxies=proxies, upstream=upstream, port=port)
 
 
-def create_template(port, template_type, upstream='websocket'):
-    template = {'ws': WS_TEMPLATE, 'default': HTTP_TEMPLATE}.get(template_type)
-    return Template(template if template is not None else HTTPS_TEMPLATE).substitute(port=port, upstream=upstream)
+def create_template(port: str, template_type: str, upstream='websocket'):
+    template = {'webproxy': UPSTREAM_TEMPLATE, 'default': HTTP_TEMPLATE}.get(template_type)
+    proxies, port = create_upstreams_port(port)
+    return Template(template if template is not None else HTTPS_TEMPLATE).substitute(proxies=proxies, upstream=upstream, port=port)
 
 
-def octane_create_ssl_template(port):
-    return Template(OCTANE_HTTPS_TEMPLATE).substitute(port=port)
+def octane_create_ssl_template(port: str):
+    proxies, port = create_upstreams_port(port)
+    return Template(OCTANE_HTTPS_TEMPLATE).substitute(proxies=proxies, port=port)
 
 
-def octane_create_template(port):
-    return Template(OCTANE_HTTP_TEMPLATE).substitute(port=port)
+def octane_create_template(port: str):
+    proxies, port = create_upstreams_port(port)
+    return Template(OCTANE_HTTP_TEMPLATE).substitute(proxies=proxies, port=port)
 
 
 def write_template(_path, template):
@@ -471,9 +479,9 @@ def prepare_program():
     program.add_argument('--template', required=True,
                          help='Web App name', type=str)
     program.add_argument(
-        '--port', '-p', help='Web application running port', required=True, type=int)
-    program.add_argument('--type', '-t', help='Nginx templete type (Ex: default|websocket)',
-                         default='default', choices=['default', 'websocket'], type=str)
+        '--port', '-p', help='Web application running port', required=True, type=str)
+    program.add_argument('--type', '-t', help='Nginx templete type (Ex: default|webproxy)',
+                         default='default', choices=['default', 'webproxy'], type=str)
     program.add_argument(
         '--name', '-n', help='Websocket upstream server name', default=None, type=str)
     program.add_argument('--version', action='version',
