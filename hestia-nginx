@@ -408,7 +408,7 @@ server {
 }
     """
     
-def create_upstreams_port(port: str) -> tuple[str, str]:
+def create_upstreams_port(port: str):
     ports = port.split(",") if "," in port else [port]
     proxies = "\n".join(["    server 127.0.0.1:{};".format(x) for x in ports])
     return (proxies, int(ports[0]))
